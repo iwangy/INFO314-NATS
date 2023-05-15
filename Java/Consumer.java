@@ -8,6 +8,6 @@ public class Consumer {
       System.out.println(new String(msg.getData()));
     });
 
-    d.subscribe("INFO314");
+    d.subscribe("testing");
   }
 }
