@@ -1,12 +1,14 @@
 /**
  * Take the NATS URL on the command-line.
  */
+import io.nats.client.*;
 public class StockPublisher {
   public static void main(String... args) throws Exception {
       String natsURL = "nats://127.0.0.1:4222";
       if (args.length > 0) {
           natsURL = args[0];
       }
+      Connection nc = Nats.connect("nats://localhost:4222");
 
       System.console().writer().println("Starting stock publisher....");
 
