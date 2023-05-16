@@ -24,13 +24,18 @@ public class StockPublisher {
         // StockMarket sm3 = new StockMarket(StockPublisher::publishDebugOutput, "GE", "GMC", "FORD");
         // new Thread(sm3).start();
 
-        StockMarket sm1 = new StockMarket(StockPublisher::publishMessage, "AMZN", "MSFT", "GOOG");
+        StockMarket sm1 = new StockMarket(StockPublisher::publishMessage, "AMZN", "MSFT", "GOOG", "NFLX", "SPOT", "META", "AAPL");
         new Thread(sm1).start();
+        StockMarket sm2 = new StockMarket(StockPublisher::publishMessage, "ATVI", "ROVIO", "NVDA", "RBLX", "SONY", "NTDOY", "TCEHY");
+        new Thread(sm2).start();
+        StockMarket sm3 = new StockMarket(StockPublisher::publishMessage, "GE", "GM", "F", "TSLA", "FUJHY", "BMWYY", "MBGYY");
+        new Thread(sm3).start();
     }
 
-    public synchronized static void publishDebugOutput(String symbol, int adjustment, int price) {
-        System.console().writer().printf("PUBLISHING %s: %d -> %f\n", symbol, adjustment, (price / 100.f));
-    }
+    // public synchronized static void publishDebugOutput(String symbol, int adjustment, int price) {
+    //     System.console().writer().printf("PUBLISHING %s: %d -> %f\n", symbol, adjustment, (price / 100.f));
+    // }
+
     // When you have the NATS code here to publish a message, put "publishMessage" in
     // the above where "publishDebugOutput" currently is
     public synchronized static void publishMessage(String symbol, int adjustment, int price) {
