@@ -53,7 +53,7 @@ public class StockMonitor {
         d.subscribe(arg);
       }
     } else {
-      d.subscribe(">");
+      d.subscribe("stock.*");
     }
 
 
