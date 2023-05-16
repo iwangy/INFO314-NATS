@@ -45,10 +45,10 @@ public class StockPublisher {
             "<message sent=\""+ts+"\">" +
                 "<stock>" +
                     "<name>"+symbol+"</name>" +
-                    "<adjustment>"+adjustment+"</adjustment>" +  
-                    "<adjustedPrice>"+price+"</adjustedPrice>" +
+                    "<adjustment>"+(adjustment/100.f)+"</adjustment>" +  
+                    "<adjustedPrice>"+(price/100.f)+"</adjustedPrice>" +
                 "</stock>" +
             "</message>";
-        nc.publish("testing", xmlString.getBytes());
+        nc.publish(symbol, xmlString.getBytes());
     } 
 }
