@@ -7,19 +7,20 @@ import io.nats.client.*;
 
 
 public class StockMonitor {
-  public static void main(String... args) throws IOException, InterruptedException {
-    
-    // System.out.println(args.length);
-    // for(int i = 0; i < args.length; i++) {
-    //   System.out.println(args[i]);
-    // }
+  public static void main(String... args) throws IOException, InterruptedException {  
 
+    File file = new File("log.txt");
+    if (file.exists()) {
+      file.delete();
+    }
+    
     Connection nc = Nats.connect("nats://localhost:4222");
     Dispatcher d = nc.createDispatcher((msg) -> {
       System.out.println(new String(msg.getData()));
 
 
       try(FileWriter fw = new FileWriter("log.txt", true)) {
+        
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
         Document document = builder.parse(new ByteArrayInputStream(new String(msg.getData()).getBytes()));
@@ -47,9 +48,14 @@ public class StockMonitor {
       }
     });
 
-    for (String arg: args) {
-      d.subscribe(arg);
+    if (args.length > 0) {
+      for (String arg: args) {
+        d.subscribe(arg);
+      }
+    } else {
+      d.subscribe(">");
     }
+
 
   }
 
