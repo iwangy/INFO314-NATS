@@ -11,8 +11,8 @@ public class StockBrokerClient {
     CompletableFuture<Message> response;
     try {
       System.out.println("We are connecting to " + stockBrokerName);
-      response = nc.request("broker." + stockBrokerName, "asdfasdfasdfasdfasdfasdf".getBytes());
-      Message m = response.get(1, TimeUnit.SECONDS);
+      response = nc.request("broker." + stockBrokerName, "<order><buy symbol=\"AAPL\" amount=\"500\" /></order>\n".getBytes());
+      Message m = response.get(100, TimeUnit.SECONDS);
       System.out.println("Data: " + new String(m.getData()));
     } catch (Exception e) {
       e.printStackTrace();
