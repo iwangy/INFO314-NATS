@@ -4,27 +4,23 @@ import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.StringWriter;
-import org.xml.sax.SAXException;
 import java.io.*;
 import io.nats.client.*;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class StockBroker {
 
-  private Connection nc = null;
+  private Connection nc;
 
   public StockBroker(String url, String name) throws Exception {
     this.nc = Nats.connect(url);
     try {
       Dispatcher d = nc.createDispatcher((msg) -> {
-        String xml = new String(msg.getData());
+        System.out.println("got order: " + new String(msg.getData()));
         String receipt = order(new String(msg.getData()));
         this.nc.publish(msg.getReplyTo(), receipt.getBytes());
+        System.out.println("sent receipt " + receipt);
       });
       d.subscribe("broker." + name);
     }
@@ -35,11 +31,11 @@ public class StockBroker {
 
   public static void main(String... args) {
     String url = "nats://127.0.0.1:4222";
-    String name = "deeznuts";
+    String name = "deeznuts"; // default name
     if (args.length > 0 && args[0] != null) {
       url = args[0];
     }
-    if (args.length > 1 && args[1] != null) {
+    if (args.length > 1 && args[1] != null) { // accepting the second parameter as the name
       name = args[1];
     }
 
@@ -89,7 +85,6 @@ public class StockBroker {
      // new dispatcher here that subscribes to the symbol
      // get the price
      int currentPrice = 0;
-     Message m;
 
      try {
        Subscription sub = this.nc.subscribe("stock." + symbol);
