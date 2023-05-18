@@ -17,13 +17,6 @@ public class StockPublisher {
         System.console().writer().println("connected to nats");
         System.console().writer().println("Starting stock publisher....");
 
-        // StockMarket sm1 = new StockMarket(StockPublisher::publishDebugOutput, "AMZN", "MSFT", "GOOG");
-        // new Thread(sm1).start();
-        // StockMarket sm2 = new StockMarket(StockPublisher::publishDebugOutput, "ACTV", "BLIZ", "ROVIO");
-        // new Thread(sm2).start();
-        // StockMarket sm3 = new StockMarket(StockPublisher::publishDebugOutput, "GE", "GMC", "FORD");
-        // new Thread(sm3).start();
-
         StockMarket sm1 = new StockMarket(StockPublisher::publishMessage, "AMZN", "MSFT", "GOOG", "NFLX", "SPOT", "META", "AAPL");
         new Thread(sm1).start();
         StockMarket sm2 = new StockMarket(StockPublisher::publishMessage, "ATVI", "ROVIO", "NVDA", "RBLX", "SONY", "NTDOY", "TCEHY");
