@@ -2,11 +2,14 @@
  * Take the NATS URL on the command-line.
  */
 import java.util.Date;
+// import java.util.HashMap;
 import java.sql.Timestamp;
 import io.nats.client.*;
+
 public class StockPublisher {
 
     private static Connection nc = null;
+    // private static HashMap<String, Integer> priceTracker = new HashMap<>();
 
     public static void main(String... args) throws Exception {
         String natsURL = "nats://127.0.0.1:4222";
@@ -42,6 +45,22 @@ public class StockPublisher {
                     "<adjustedPrice>"+(price)+"</adjustedPrice>" +
                 "</stock>" +
             "</message>";
+        // System.out.print("[" + symbol + "]: " + price + "\n");
+        // priceTracker.put(symbol, price);
         nc.publish("stock."+symbol, xmlString.getBytes());
     } 
+
+    // public static Integer getPrice(String symbol) {
+    //     Integer price = priceTracker.get(symbol);
+    //     if (price != null) {
+    //     return price.intValue();
+    //     } else {
+    //         // Handle the case where the symbol is not found in the map
+    //         throw new IllegalArgumentException("Symbol not found: " + symbol);
+    //     }
+    // }
+
+    // public static void setPrice(String symbol, int price) {
+    //     priceTracker.put(symbol, price);
+    // }
 }

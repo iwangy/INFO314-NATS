@@ -86,7 +86,7 @@ public class StockBrokerClient {
     Path filePath = Paths.get("../Clients/portfolio-2.xml");
     try {
       Files.write(filePath, portfolioXML.toString().getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-      System.out.println("portfolio updated successfully.");
+      System.out.println("portfolio updated successfully.\n");
     } catch (IOException e) {
       System.err.println("Error writing file: " + e.getMessage());
     }
