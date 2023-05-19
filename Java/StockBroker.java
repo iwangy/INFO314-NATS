@@ -8,6 +8,7 @@ import java.io.*;
 import io.nats.client.*;
 
 import java.time.Duration;
+import java.util.HashMap;
 
 public class StockBroker {
 
@@ -17,10 +18,10 @@ public class StockBroker {
     this.nc = Nats.connect(url);
     try {
       Dispatcher d = nc.createDispatcher((msg) -> {
-        System.out.println("got order: " + new String(msg.getData()));
+        System.out.println("[Got Order]: " + new String(msg.getData()) + "\n");
         String receipt = order(new String(msg.getData()));
         this.nc.publish(msg.getReplyTo(), receipt.getBytes());
-        System.out.println("sent receipt " + receipt);
+        System.out.println("[Sent Receipt]: " + receipt + "\n");
       });
       d.subscribe("broker." + name);
     }
@@ -31,7 +32,7 @@ public class StockBroker {
 
   public static void main(String... args) {
     String url = "nats://127.0.0.1:4222";
-    String name = "deeznuts"; // default name
+    String name = "ted"; // default name
     if (args.length > 0 && args[0] != null) {
       url = args[0];
     }
@@ -84,7 +85,11 @@ public class StockBroker {
 
      // new dispatcher here that subscribes to the symbol
      // get the price
-     int currentPrice = 0;
+
+    // StockPublisher.setPrice(symbol, 100);
+    //  int currentPrice = StockPublisher.getPrice(symbol);
+      int currentPrice = -1;
+    //  System.out.println("[Stock Price]: " + currentPrice + "\n");
 
      try {
        Subscription sub = this.nc.subscribe("stock." + symbol);
@@ -101,17 +106,20 @@ public class StockBroker {
        String sn = stockName.item(0).getTextContent();
 
        if (sn.equals(symbol)) {
-         NodeList adjustedPrice = root.getElementsByTagName("adjustedPrice");
-         String adjp = adjustedPrice.item(0).getTextContent();
-         currentPrice = Integer.valueOf(adjp);
+        NodeList adjustedPrice = root.getElementsByTagName("adjustedPrice");
+        String adjp = adjustedPrice.item(0).getTextContent();
+        NodeList adjustment = root.getElementsByTagName("adjustment");
+        String adj = adjustment.item(0).getTextContent();
+        currentPrice = Integer.valueOf(adjp) - Integer.valueOf(adj);
        }
 
      } catch (Exception e) {
        e.printStackTrace();
      }
+
      double completeAmount;
      if (action.equals("sell")) {
-       // (current price of stock * number of shares) * 0.10
+       // (current price of stock * number of shares) * 0.9
        // get current price of stock
        // xml data contains (symbol and amount)
       
@@ -119,7 +127,7 @@ public class StockBroker {
 
 
      } else {
-       // (current price of stock * number of shares) * 0.90
+       // (current price of stock * number of shares) * 1.1
        completeAmount = (currentPrice * amount) * 1.1;
      }
 
@@ -137,6 +145,7 @@ public class StockBroker {
      TransformerFactory transformerFactory = TransformerFactory.newInstance();
      Transformer transformer = transformerFactory.newTransformer();
      transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+     transformer.setOutputProperty("omit-xml-declaration", "yes"); 
 
        // create string from xml tree
        StringWriter sw = new StringWriter();
