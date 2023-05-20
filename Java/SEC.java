@@ -13,45 +13,51 @@ public class SEC {
 
       //csv format
       // timestamp, client, broker, order, amount
-      // System.out.println(new String(msg.getData()));
-      // System.out.println(msg.getSubject());
+//       System.out.println(new String(msg.getData()));
+//       System.out.println(msg.getSubject());
+//       System.out.println();
 
-      try(FileWriter fw = new FileWriter("suspicious.log", true)) {
-        String timestamp = "";
-        String broker = "";
-        String client = "";
-        
-        if (msg.getSubject().matches("broker\\..*")) {
-          Date date = new Date();
-          Timestamp ts = new Timestamp(date.getTime());
-          timestamp = ts.toString();
-          String sub = msg.getSubject();
-          int dotIndex = sub.lastIndexOf(".") + 1;
-          broker = sub.substring(dotIndex);
-        } 
-        if (msg.getSubject().matches("_INBOX\\..*")) {
-          client = msg.getSubject();
-          
-          DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-          DocumentBuilder builder = factory.newDocumentBuilder();
-          Document document = builder.parse(new ByteArrayInputStream(new String(msg.getData()).getBytes()));
-  
-          document.getDocumentElement().normalize();
-          
-          Element root = document.getDocumentElement();
-          System.out.println(root.getNodeName());
+       if (msg.getSubject().contains("_INBOX")) {
+//         System.out.println(new String(msg.getData()));
+         String xml = new String(msg.getData());
+         try{
+           FileWriter fw = new FileWriter("suspicious.log", true);
+           DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+           DocumentBuilder builder = factory.newDocumentBuilder();
+           Document document = builder.parse(new ByteArrayInputStream(xml.getBytes()));
 
-          NodeList receipt = root.getElementsByTagName("buy");
-          String amount = root.getAttribute("amount");
-        }
+           document.getDocumentElement().normalize();
+           Element root = document.getDocumentElement();
 
-        fw.write(new String(timestamp + ", " + client + ", " + broker + ", " + "\n"));
-        fw.close();
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
+           NodeList buy = root.getElementsByTagName("buy");
+           NodeList sell = root.getElementsByTagName("sell");
+
+           int price = -1;
+           String timestamp = root.getAttribute("sent");
+           String broker = root.getAttribute("broker");
+
+            if (buy.getLength() == 0) {
+             // this is sell
+              price = Integer.valueOf(((Element) sell.item(0)).getAttribute("price"));
+
+            } else if (sell.getLength() == 0) {
+             // this is buy
+              price = Integer.valueOf(((Element) buy.item(0)).getAttribute("price"));
+            }
+             System.out.println("[Price]: " + price);
+            if (price > 5000) {
+                fw.write(new String(timestamp + ", " + msg.getSubject() + ", " + broker + ", " + "\n"));
+                fw.write(xml + "\n\n");
+//                fw.close();
+            }
+         } catch (Exception e) {
+                e.printStackTrace();
+         }
+       }
+
+
     });
 
-    d.subscribe("broker.*");
+    d.subscribe(">");
   }
 }

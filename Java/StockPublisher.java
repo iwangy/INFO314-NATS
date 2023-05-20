@@ -17,8 +17,10 @@ public class StockPublisher {
             natsURL = args[0];
         }
         nc = Nats.connect("nats://localhost:4222");
-        System.console().writer().println("connected to nats");
-        System.console().writer().println("Starting stock publisher....");
+//        System.console().writer().println("connected to nats");
+//        System.console().writer().println("Starting stock publisher....");
+        System.out.println("connected to nats");
+        System.out.println("Starting stock publisher....");
 
         StockMarket sm1 = new StockMarket(StockPublisher::publishMessage, "AMZN", "MSFT", "GOOG", "NFLX", "SPOT", "META", "AAPL");
         new Thread(sm1).start();

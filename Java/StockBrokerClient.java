@@ -21,6 +21,10 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import java.sql.Timestamp;
+import java.util.Date;
+
+
 
 public class StockBrokerClient {
   private Connection nc;
@@ -32,14 +36,14 @@ public class StockBrokerClient {
   private Map<String, Integer> sellStrategy = new HashMap<>(); // <symbol, above price>
   private Map<String, Pair> buyStrategy = new HashMap<>(); // <symbol, <price, amount>>
 
-  public StockBrokerClient(String stockBrokerName) {
+  public StockBrokerClient(String natURL, String stockBrokerName) {
     this.stockBrokerName = stockBrokerName;
     try {
-      this.nc = Nats.connect("nats://localhost:4222");
+      this.nc = Nats.connect(natURL);
       System.out.println("We are connecting to " + stockBrokerName);
 
-      this.portfolio = this.setupPortfolio("../Clients/portfolio-2.xml");
-      this.setupStrategy("../Clients/strategy-2.xml");
+      this.portfolio = this.setupPortfolio("Clients/portfolio-2.xml");
+      this.setupStrategy("Clients/strategy-2.xml");
 
       Dispatcher dispatcher = nc.createDispatcher((msg) -> {
         String xmlData = new String(msg.getData());
@@ -55,12 +59,12 @@ public class StockBrokerClient {
           if(this.sellStrategy.containsKey(symbol) &&
             this.sellStrategy.get(symbol) <= Integer.parseInt(price) &&
             this.portfolio.containsKey(symbol)) {
-            System.out.println("Time to Sell: " + symbol + " amount: " + portfolio.get(symbol));
-            this.sendXMLSellOrderRequest(symbol);
+            System.out.println("Time to Sell: " + symbol + " at price: " + price + " amount: " + portfolio.get(symbol));
+            this.sendXMLSellOrderRequest(symbol, Integer.parseInt(price));
           } else if(this.buyStrategy.containsKey(symbol) &&
                   this.buyStrategy.get(symbol).getKey() >= Integer.parseInt(price)) {
             System.out.println("Time to Buy: " + symbol + " at price: " + price + " current amount: " + buyStrategy.get(symbol).getValue());
-            this.sendXMLBuyOrderRequest(symbol, this.buyStrategy.get(symbol).getValue());
+            this.sendXMLBuyOrderRequest(symbol, this.buyStrategy.get(symbol).getValue(), Integer.parseInt(price));
           }
         } catch (ParserConfigurationException | SAXException | IOException e) {
           throw new RuntimeException(e);
@@ -83,7 +87,7 @@ public class StockBrokerClient {
 
     portfolioXML.append("</portfolio>");
 
-    Path filePath = Paths.get("../Clients/portfolio-2.xml");
+    Path filePath = Paths.get("Clients/portfolio-2.xml");
     try {
       Files.write(filePath, portfolioXML.toString().getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
       System.out.println("portfolio updated successfully.\n");
@@ -92,8 +96,11 @@ public class StockBrokerClient {
     }
   }
 
-  private void sendXMLBuyOrderRequest(String symbol, int amount) {
-    String xml = String.format("<order><buy symbol=\"%s\" amount=\"%d\" /></order>", symbol, amount);
+  private void sendXMLBuyOrderRequest(String symbol, int amount, int price) {
+    Date date = new Date();
+    Timestamp ts = new Timestamp(date.getTime());
+
+    String xml = String.format("<order><buy time=\"%s\" symbol=\"%s\" amount=\"%d\" price=\"%d\" /></order>", ts, symbol, amount, price);
     try {
       Message m = nc.request("broker." + stockBrokerName, xml.getBytes(), Duration.ofSeconds(100));
       System.out.println("Receipt: " + new String(m.getData()));
@@ -106,8 +113,12 @@ public class StockBrokerClient {
     }
   }
 
-  private void sendXMLSellOrderRequest(String symbol) {
-    String xml = String.format("<order><sell symbol=\"%s\" amount=\"%d\" /></order>", symbol, portfolio.get(symbol));
+  private void sendXMLSellOrderRequest(String symbol, int price) {
+    Date date = new Date();
+    Timestamp ts = new Timestamp(date.getTime());
+
+    String xml = String.format("<order><sell time=\"%s\" symbol=\"%s\" amount=\"%d\" price=\"%d\"  /></order>", ts, symbol,
+            portfolio.get(symbol), price);
     try {
       Message m = nc.request("broker." + stockBrokerName, xml.getBytes(), Duration.ofSeconds(100));
       System.out.println("Receipt: " + new String(m.getData()));
@@ -183,7 +194,15 @@ public class StockBrokerClient {
   }
 
   public static void main(String... args) {
-    String stockBrokerName = args[0];
-    new StockBrokerClient(stockBrokerName);
+    String natsURL = "nats://127.0.0.1:4222";
+    String stockBrokerName = "ted";
+
+    if (args.length > 0 && args[0] != null) {
+      natsURL = args[0];
+    }
+    if (args.length > 1 && args[1] != null)  {
+      stockBrokerName = args[1];
+    }
+    new StockBrokerClient(natsURL, stockBrokerName);
   }
 }

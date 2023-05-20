@@ -9,12 +9,18 @@ import io.nats.client.*;
 public class StockMonitor {
   public static void main(String... args) throws IOException, InterruptedException {  
 
+    String natURL = "nats://localhost:4222";
+
+    if (args.length > 0 && args[0] != null) {
+      natURL = args[0];
+    }
+
     File file = new File("log.txt");
     if (file.exists()) {
       file.delete();
     }
     
-    Connection nc = Nats.connect("nats://localhost:4222");
+    Connection nc = Nats.connect(natURL);
     Dispatcher d = nc.createDispatcher((msg) -> {
       System.out.println(new String(msg.getData()));
 
