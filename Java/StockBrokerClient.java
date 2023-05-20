@@ -36,14 +36,14 @@ public class StockBrokerClient {
   private Map<String, Integer> sellStrategy = new HashMap<>(); // <symbol, above price>
   private Map<String, Pair> buyStrategy = new HashMap<>(); // <symbol, <price, amount>>
 
-  public StockBrokerClient(String natURL, String stockBrokerName) {
+  public StockBrokerClient(String natURL, String stockBrokerName, String portfolioName, String strategyName) {
     this.stockBrokerName = stockBrokerName;
     try {
       this.nc = Nats.connect(natURL);
       System.out.println("We are connecting to " + stockBrokerName);
 
-      this.portfolio = this.setupPortfolio("Clients/portfolio-2.xml");
-      this.setupStrategy("Clients/strategy-2.xml");
+      this.portfolio = this.setupPortfolio(String.format("Clients/%s", portfolioName));
+      this.setupStrategy(String.format("Clients/%s", strategyName));
 
       Dispatcher dispatcher = nc.createDispatcher((msg) -> {
         String xmlData = new String(msg.getData());
@@ -196,6 +196,8 @@ public class StockBrokerClient {
   public static void main(String... args) {
     String natsURL = "nats://127.0.0.1:4222";
     String stockBrokerName = "ted";
+    String portfolioName = "portfolio-1.xml";
+    String strategyName = "strategy-1.xml";
 
     if (args.length > 0 && args[0] != null) {
       natsURL = args[0];
@@ -203,6 +205,13 @@ public class StockBrokerClient {
     if (args.length > 1 && args[1] != null)  {
       stockBrokerName = args[1];
     }
-    new StockBrokerClient(natsURL, stockBrokerName);
+    if (args.length > 2 && args[2] != null)  {
+      portfolioName = args[2];
+    }
+    if (args.length > 3 && args[3] != null) {
+      strategyName = args[3];
+    }
+
+    new StockBrokerClient(natsURL, stockBrokerName, portfolioName, strategyName);
   }
 }

@@ -56,10 +56,7 @@ public class SEC {
                 e.printStackTrace();
          }
        }
-
-
     });
-
     d.subscribe(">");
   }
 }
