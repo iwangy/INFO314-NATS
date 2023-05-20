@@ -56,9 +56,9 @@ public class StockBroker {
     //sleep
      Random waiter = new Random();
      int time = waiter.nextInt(5) * 1000 + 1000;
-     System.out.println("[Broker]: " + "I am sleeping for " + time);
+//     System.out.println("[Broker]: " + "I am sleeping for " + time);
      Thread.sleep(time);
-     System.out.println("[Broker]: I woke up");
+//     System.out.println("[Broker]: I woke up");
 
      String receipt = "";
      try {

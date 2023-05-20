@@ -36,6 +36,8 @@ public class SEC {
            String timestamp = root.getAttribute("sent");
            String broker = root.getAttribute("broker");
 
+           int transaction = -1;
+
             if (buy.getLength() == 0) {
              // this is sell
               price = Integer.valueOf(((Element) sell.item(0)).getAttribute("price"));
