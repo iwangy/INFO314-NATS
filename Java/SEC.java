@@ -45,7 +45,7 @@ public class SEC {
               price = Integer.valueOf(((Element) buy.item(0)).getAttribute("price"));
             }
              System.out.println("[Price]: " + price);
-            if (price > 5000) {
+            if (price > 500000) {
                 fw.write(new String(timestamp + ", " + msg.getSubject() + ", " + broker + ", " + "\n"));
                 fw.write(xml + "\n\n");
 //                fw.close();

@@ -24,7 +24,6 @@ public class StockMonitor {
     Dispatcher d = nc.createDispatcher((msg) -> {
       System.out.println(new String(msg.getData()));
 
-
       try(FileWriter fw = new FileWriter("log.txt", true)) {
         
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
