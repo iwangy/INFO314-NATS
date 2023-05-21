@@ -6,20 +6,25 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.StringWriter;
 import java.io.*;
 import io.nats.client.*;
+import org.xml.sax.SAXException;
 
+import java.sql.Timestamp;
 import java.time.Duration;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Random;
 
 public class StockBroker {
 
   private Connection nc;
 
   public StockBroker(String url, String name) throws Exception {
+    System.out.println("[StockBroker]: " + name + " is running!");
     this.nc = Nats.connect(url);
     try {
       Dispatcher d = nc.createDispatcher((msg) -> {
         System.out.println("[Got Order]: " + new String(msg.getData()) + "\n");
-        String receipt = order(new String(msg.getData()));
+        String receipt = order(new String(msg.getData()), name);
         this.nc.publish(msg.getReplyTo(), receipt.getBytes());
         System.out.println("[Sent Receipt]: " + receipt + "\n");
       });
@@ -45,10 +50,16 @@ public class StockBroker {
     } catch (Exception e) {
       e.printStackTrace();
     }
-    
   }
 
-   private String order(String xml) {
+   private String order(String xml, String brokerName) throws InterruptedException {
+    //sleep
+     Random waiter = new Random();
+     int time = waiter.nextInt(5) * 1000 + 1000;
+//     System.out.println("[Broker]: " + "I am sleeping for " + time);
+     Thread.sleep(time);
+//     System.out.println("[Broker]: I woke up");
+
      String receipt = "";
      try {
        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -64,15 +75,19 @@ public class StockBroker {
 
        if (buy.getLength() == 0) {
          // this is sell
-         String symbol = ((Element) sell.item(0)).getAttribute("symbol");
+//         String ts = ((Element) sell.item(0)).getAttribute(("time"));
+//         String symbol = ((Element) sell.item(0)).getAttribute("symbol");
          int amount = Integer.valueOf(((Element) sell.item(0)).getAttribute("amount"));
-         receipt = orderReceiptBuilder(convertToXML(sell), "sell", symbol, amount);
+         int price = Integer.valueOf(((Element) sell.item(0)).getAttribute("price"));
+         receipt = orderReceiptBuilder(convertToXML(sell),"sell", amount, price, brokerName);
         
        } else if (sell.getLength() == 0) {
          // this is buy
-         String symbol = ((Element) buy.item(0)).getAttribute("symbol");
+//         String ts = ((Element) sell.item(0)).getAttribute(("time"));
+//         String symbol = ((Element) buy.item(0)).getAttribute("symbol");
          int amount = Integer.valueOf(((Element) buy.item(0)).getAttribute("amount"));
-         receipt = orderReceiptBuilder(convertToXML(buy), "buy", symbol, amount);
+         int price = Integer.valueOf(((Element) buy.item(0)).getAttribute("price"));
+         receipt = orderReceiptBuilder(convertToXML(buy),"buy", amount, price, brokerName);
 
        }
      } catch (Exception e) {
@@ -81,62 +96,60 @@ public class StockBroker {
      return receipt;
    }
 
-   private String orderReceiptBuilder(String xml, String action, String symbol, int amount) {
+   private String orderReceiptBuilder(String xml, String action, int amount, int price, String brokerName) throws IOException, SAXException, ParserConfigurationException {
 
      // new dispatcher here that subscribes to the symbol
      // get the price
 
     // StockPublisher.setPrice(symbol, 100);
     //  int currentPrice = StockPublisher.getPrice(symbol);
-      int currentPrice = -1;
     //  System.out.println("[Stock Price]: " + currentPrice + "\n");
 
-     try {
-       Subscription sub = this.nc.subscribe("stock." + symbol);
-       Message message = sub.nextMessage(Duration.ofSeconds(100));
-
-       DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-       DocumentBuilder builder = factory.newDocumentBuilder();
-       Document document = builder.parse(new ByteArrayInputStream(new String(message.getData()).getBytes()));
-
-       document.getDocumentElement().normalize();
-       Element root = document.getDocumentElement();
-
-       NodeList stockName = root.getElementsByTagName("name");
-       String sn = stockName.item(0).getTextContent();
-
-       if (sn.equals(symbol)) {
-        NodeList adjustedPrice = root.getElementsByTagName("adjustedPrice");
-        String adjp = adjustedPrice.item(0).getTextContent();
-        NodeList adjustment = root.getElementsByTagName("adjustment");
-        String adj = adjustment.item(0).getTextContent();
-        currentPrice = Integer.valueOf(adjp) - Integer.valueOf(adj);
-       }
-
-     } catch (Exception e) {
-       e.printStackTrace();
-     }
+//     try {
+//       Subscription sub = this.nc.subscribe("stock." + symbol);
+//       Message message = sub.nextMessage(Duration.ofSeconds(100));
+//
+//       DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+//       DocumentBuilder builder = factory.newDocumentBuilder();
+//       Document document = builder.parse(new ByteArrayInputStream(new String(message.getData()).getBytes()));
+//
+//       document.getDocumentElement().normalize();
+//       Element root = document.getDocumentElement();
+//
+//       NodeList stockName = root.getElementsByTagName("name");
+//       String sn = stockName.item(0).getTextContent();
+//
+//       if (sn.equals(symbol)) {
+//        NodeList adjustedPrice = root.getElementsByTagName("adjustedPrice");
+//        String adjp = adjustedPrice.item(0).getTextContent();
+//        NodeList adjustment = root.getElementsByTagName("adjustment");
+//        String adj = adjustment.item(0).getTextContent();
+//        currentPrice = Integer.valueOf(adjp) - Integer.valueOf(adj);
+//       }
+//
+//     } catch (Exception e) {
+//       e.printStackTrace();
+//     }
 
      double completeAmount;
      if (action.equals("sell")) {
        // (current price of stock * number of shares) * 0.9
        // get current price of stock
        // xml data contains (symbol and amount)
-      
-       completeAmount = (currentPrice * amount) * .9;
-
-
+       completeAmount = (price * amount) * .9;
      } else {
        // (current price of stock * number of shares) * 1.1
-       completeAmount = (currentPrice * amount) * 1.1;
+       completeAmount = (price * amount) * 1.1;
      }
 
+     Date date = new Date();
+     Timestamp timeStamp = new Timestamp(date.getTime());
+
      String xmlString =
-       "<OrderReceipt>" +
+       "<OrderReceipt sent=\""+timeStamp+"\" broker=\""+brokerName+"\">" +
           xml +
-          "<complete amount=" + completeAmount + "/>"+
+          "<complete amount=\"" + completeAmount + "\"/>"+
        "</OrderReceipt>";
-   
 
      return xmlString;
    }

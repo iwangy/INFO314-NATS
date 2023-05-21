@@ -21,6 +21,10 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import java.sql.Timestamp;
+import java.util.Date;
+
+
 
 public class StockBrokerClient {
   private Connection nc;
@@ -32,14 +36,18 @@ public class StockBrokerClient {
   private Map<String, Integer> sellStrategy = new HashMap<>(); // <symbol, above price>
   private Map<String, Pair> buyStrategy = new HashMap<>(); // <symbol, <price, amount>>
 
-  public StockBrokerClient(String stockBrokerName) {
+  public StockBrokerClient(String natURL, String stockBrokerName, String portfolioName, String strategyName) {
     this.stockBrokerName = stockBrokerName;
     try {
-      this.nc = Nats.connect("nats://localhost:4222");
+      this.nc = Nats.connect(natURL);
       System.out.println("We are connecting to " + stockBrokerName);
 
-      this.portfolio = this.setupPortfolio("../Clients/portfolio-2.xml");
-      this.setupStrategy("../Clients/strategy-2.xml");
+      //this.portfolio = this.setupPortfolio(String.format("Clients/%s", portfolioName));
+      this.portfolio = this.setupPortfolio(String.format("../Clients/%s", portfolioName)); //for VSCode
+
+      //this.setupStrategy(String.format("./Clients/%s", strategyName));
+      this.setupStrategy(String.format("../Clients/%s", strategyName)); //for VSCode
+
 
       Dispatcher dispatcher = nc.createDispatcher((msg) -> {
         String xmlData = new String(msg.getData());
@@ -55,12 +63,12 @@ public class StockBrokerClient {
           if(this.sellStrategy.containsKey(symbol) &&
             this.sellStrategy.get(symbol) <= Integer.parseInt(price) &&
             this.portfolio.containsKey(symbol)) {
-            System.out.println("Time to Sell: " + symbol + " amount: " + portfolio.get(symbol));
-            this.sendXMLSellOrderRequest(symbol);
+            System.out.println("Time to Sell: " + symbol + " at price: " + price + " amount: " + portfolio.get(symbol));
+            this.sendXMLSellOrderRequest(symbol, Integer.parseInt(price), portfolioName);
           } else if(this.buyStrategy.containsKey(symbol) &&
                   this.buyStrategy.get(symbol).getKey() >= Integer.parseInt(price)) {
             System.out.println("Time to Buy: " + symbol + " at price: " + price + " current amount: " + buyStrategy.get(symbol).getValue());
-            this.sendXMLBuyOrderRequest(symbol, this.buyStrategy.get(symbol).getValue());
+            this.sendXMLBuyOrderRequest(symbol, this.buyStrategy.get(symbol).getValue(), Integer.parseInt(price), portfolioName);
           }
         } catch (ParserConfigurationException | SAXException | IOException e) {
           throw new RuntimeException(e);
@@ -73,7 +81,7 @@ public class StockBrokerClient {
     }
   }
 
-  private void writePortFolio() {
+  private void writePortFolio(String portfolioName) {
     StringBuilder portfolioXML = new StringBuilder("<portfolio>\n");
 
     for(String symbol: portfolio.keySet()) {
@@ -83,7 +91,9 @@ public class StockBrokerClient {
 
     portfolioXML.append("</portfolio>");
 
-    Path filePath = Paths.get("../Clients/portfolio-2.xml");
+    //Path filePath = Paths.get("portfolio-2.xml");
+    Path filePath = Paths.get("..", "Clients", portfolioName);
+
     try {
       Files.write(filePath, portfolioXML.toString().getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
       System.out.println("portfolio updated successfully.\n");
@@ -92,29 +102,36 @@ public class StockBrokerClient {
     }
   }
 
-  private void sendXMLBuyOrderRequest(String symbol, int amount) {
-    String xml = String.format("<order><buy symbol=\"%s\" amount=\"%d\" /></order>", symbol, amount);
+  private void sendXMLBuyOrderRequest(String symbol, int amount, int price, String portfolioName) {
+    Date date = new Date();
+    Timestamp ts = new Timestamp(date.getTime());
+
+    String xml = String.format("<order><buy time=\"%s\" symbol=\"%s\" amount=\"%d\" price=\"%d\" /></order>", ts, symbol, amount, price);
     try {
       Message m = nc.request("broker." + stockBrokerName, xml.getBytes(), Duration.ofSeconds(100));
       System.out.println("Receipt: " + new String(m.getData()));
 
       // update portfolio
       portfolio.put(symbol, portfolio.getOrDefault(symbol, 0) + amount);
-      this.writePortFolio();
+      this.writePortFolio(portfolioName);
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }
   }
 
-  private void sendXMLSellOrderRequest(String symbol) {
-    String xml = String.format("<order><sell symbol=\"%s\" amount=\"%d\" /></order>", symbol, portfolio.get(symbol));
+  private void sendXMLSellOrderRequest(String symbol, int price, String portfolioName) {
+    Date date = new Date();
+    Timestamp ts = new Timestamp(date.getTime());
+
+    String xml = String.format("<order><sell time=\"%s\" symbol=\"%s\" amount=\"%d\" price=\"%d\"  /></order>", ts, symbol,
+            portfolio.get(symbol), price);
     try {
       Message m = nc.request("broker." + stockBrokerName, xml.getBytes(), Duration.ofSeconds(100));
       System.out.println("Receipt: " + new String(m.getData()));
 
       // update portfolio
       portfolio.remove(symbol);
-      this.writePortFolio();
+      this.writePortFolio(portfolioName);
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }
@@ -183,7 +200,24 @@ public class StockBrokerClient {
   }
 
   public static void main(String... args) {
-    String stockBrokerName = args[0];
-    new StockBrokerClient(stockBrokerName);
+    String natsURL = "nats://127.0.0.1:4222";
+    String stockBrokerName = "ted";
+    String portfolioName = "portfolio-1.xml";
+    String strategyName = "strategy-1.xml";
+
+    if (args.length > 0 && args[0] != null) {
+      natsURL = args[0];
+    }
+    if (args.length > 1 && args[1] != null)  {
+      stockBrokerName = args[1];
+    }
+    if (args.length > 2 && args[2] != null)  {
+      portfolioName = args[2];
+    }
+    if (args.length > 3 && args[3] != null) {
+      strategyName = args[3];
+    }
+
+    new StockBrokerClient(natsURL, stockBrokerName, portfolioName, strategyName);
   }
 }

@@ -1,0 +1,11 @@
+<!-- A very tech-centric strategy -->
+<strategy>
+  <when><stock>RBLX</stock><above>5000</above><sell /></when>
+  <when><stock>BLIZ</stock><above>5000</above><sell /></when>
+  <when><stock>SPOT</stock><above>5000</above><sell /></when>
+  <when><stock>MSFT</stock><above>5000</above><sell /></when>
+  <when><stock>RBLX</stock><below>1000</below><buy>500</buy></when>
+  <when><stock>BLIZ</stock><below>1000</below><buy>500</buy></when>
+  <when><stock>SPOT</stock><below>1500</below><buy>500</buy></when>
+  <when><stock>MSFT</stock><below>1500</below><buy>500</buy></when>
+</strategy>
