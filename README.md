@@ -1,5 +1,7 @@
 # INFO314-NATS
 
+## Video Demo: https://www.youtube.com/watch?v=7EPW7B4Xg-I
+
 Welcome! This is a group project homework for INFO 314. Begin by forking this repository into the GitHub account your group is using for this assignment. (It is strongly encouraged that you each individually also create forks of the repository into your own accounts at the end of this assignment--interviewers will want to see this!)
 
 You are going to be experimenting with a "messaging system" called [NATS](https://nats.io/) (also long ago known as "gnatsd"). It has copious amounts of documentation on its website, including support for all mainstream programming languages (and quite a few that aren't considered mainstream). In this homework, we will be using NATS only for its most basic of functionality, but you are encouraged to experiment and explore it further, as it is quite versatile and quite powerful.
